@@ -43,9 +43,36 @@
 
 **차별점**: 기존 서비스는 채널/영상 단위 분석에 집중. yt-insight-lab은 **카테고리 간 알고리즘 패턴 비교**에 초점.
 
-## 실행
+## 시작하기
+
+### 1. YouTube API Key 발급
+
+1. [YouTube Data API v3](https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com) 페이지에서 API 사용 설정
+2. **APIs & Services > Credentials > Create Credentials > API Key**로 키 발급
+
+### 2. 환경 변수 설정
 
 ```bash
-pip install -e .
+cp .env.example .env
+```
+
+`.env` 파일에 발급받은 API Key 입력:
+
+```
+YOUTUBE_API_KEY=발급받은키
+```
+
+### 3. 설치 및 실행
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 uvicorn app.main:app --reload
+```
+
+### 4. 테스트
+
+```bash
+pytest
 ```
