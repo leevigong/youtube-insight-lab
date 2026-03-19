@@ -1,0 +1,18 @@
+[project]
+name = "yt-insight-lab"
+version = "0.1.0"
+description = "유튜브 알고리즘을 카테고리별로 분석하는 프로젝트"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "google-api-python-client",
+    "pandas",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
