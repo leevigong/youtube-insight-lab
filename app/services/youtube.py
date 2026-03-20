@@ -10,9 +10,7 @@ class YouTubeService:
         if client:
             self.client = client
         elif settings:
-            self.client = build(
-                "youtube", "v3", developerKey=settings.youtube_api_key
-            )
+            self.client = build("youtube", "v3", developerKey=settings.youtube_api_key)
         else:
             raise ValueError("Either client or settings must be provided")
 

@@ -1,8 +1,11 @@
 import pytest
 from unittest.mock import MagicMock
+from fastapi.testclient import TestClient
 
 from fastapi import HTTPException
 
+from app.main import app
+from app.routers.categories import get_youtube_service
 from app.schemas import Video, VideoStats, PopularVideosResponse
 from app.services.youtube import YouTubeService
 
@@ -93,6 +96,33 @@ def test_get_popular_videos():
     assert videos[0].stats.like_count == 3000
     assert videos[0].stats.comment_count == 200
     assert videos[1].id == "vid2"
+
+
+def _mock_youtube_service():
+    mock_client = MagicMock()
+    mock_client.videos().list().execute.return_value = MOCK_VIDEOS_RESPONSE
+    return YouTubeService(client=mock_client)
+
+
+@pytest.fixture()
+def client():
+    app.dependency_overrides[get_youtube_service] = _mock_youtube_service
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+def test_get_popular_videos_endpoint(client):
+    response = client.get("/categories/10/videos")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category_id"] == "10"
+    assert len(data["videos"]) == 2
+    assert data["videos"][0]["id"] == "vid1"
+    assert data["videos"][0]["title"] == "Popular Video 1"
+    assert data["videos"][0]["channel_title"] == "Channel A"
+    assert data["videos"][0]["stats"]["view_count"] == 150000
+    assert data["videos"][0]["stats"]["like_count"] == 3000
 
 
 def test_get_popular_videos_api_error():
