@@ -247,3 +247,44 @@ def test_get_trends_keywords_empty():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(_test_engine)
+
+
+def test_get_trends_timeline(seeded_client):
+    response = seeded_client.get("/trends/timeline?category_id=10&days=7")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category_id"] == "10"
+    assert data["days"] == 7
+    assert isinstance(data["daily_stats"], list)
+    assert len(data["daily_stats"]) > 0
+
+    # 카테고리 10: 오늘 v1(100000), v2(200000) → avg=150000
+    today_stats = data["daily_stats"][-1]
+    assert today_stats["avg_view_count"] == 150000.0
+    assert today_stats["avg_like_count"] == 3000.0
+    assert today_stats["video_count"] == 2
+
+
+def test_get_trends_timeline_empty_category(seeded_client):
+    response = seeded_client.get("/trends/timeline?category_id=99&days=7")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category_id"] == "99"
+    assert data["daily_stats"] == []
+
+
+def test_get_trends_timeline_empty_db():
+    Base.metadata.create_all(_test_engine)
+    app.dependency_overrides[get_db] = _override_get_db
+    client = TestClient(app)
+
+    response = client.get("/trends/timeline?category_id=10&days=7")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["daily_stats"] == []
+
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(_test_engine)
