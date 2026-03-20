@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,19 +7,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.database import Base, get_db
+from app.main import app
 from app.models import TrendingVideo  # noqa: F401 — ensures table is registered
 from app.routers.categories import get_youtube_service
-from app.services.youtube import YouTubeService
+from app.scheduler import create_scheduler
 from app.schemas import (
     CollectResponse,
     DailyKeywordCount,
-    TrendKeyword,
-    KeywordTrend,
     DailyStats,
+    KeywordTrend,
     TimelineTrend,
+    TrendKeyword,
 )
+from app.services.youtube import YouTubeService
 
 
 MOCK_CATEGORIES_RESPONSE = {
@@ -145,9 +147,6 @@ def test_post_collect(client):
     assert data["collected_categories"] == 1
     assert data["collected_videos"] == 1
     assert "collected_at" in data
-
-
-from datetime import datetime, timedelta, timezone
 
 
 def _seed_videos(db_session):
@@ -288,3 +287,17 @@ def test_get_trends_timeline_empty_db():
 
     app.dependency_overrides.clear()
     Base.metadata.drop_all(_test_engine)
+
+
+def test_scheduler_creates_job():
+    scheduler = create_scheduler()
+    jobs = scheduler.get_jobs()
+
+    assert len(jobs) == 1
+    assert jobs[0].id == "collect_trending"
+    assert jobs[0].name == "collect_trending_videos"
+
+
+def test_scheduler_not_running_by_default():
+    scheduler = create_scheduler()
+    assert not scheduler.running

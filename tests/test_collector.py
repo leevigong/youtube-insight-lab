@@ -1,4 +1,3 @@
-from datetime import datetime
 from unittest.mock import MagicMock
 
 from sqlalchemy import create_engine
@@ -8,7 +7,6 @@ from app.database import Base
 from app.models import TrendingVideo
 from app.services.collector import collect_trending_videos
 from app.services.youtube import YouTubeService
-from app.schemas import Category, Video, VideoStats
 
 
 def _make_session():
