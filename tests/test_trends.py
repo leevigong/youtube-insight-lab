@@ -145,3 +145,105 @@ def test_post_collect(client):
     assert data["collected_categories"] == 1
     assert data["collected_videos"] == 1
     assert "collected_at" in data
+
+
+from datetime import datetime, timedelta, timezone
+
+
+def _seed_videos(db_session):
+    """테스트용 영상 데이터 시딩"""
+    today = datetime.now(timezone.utc)
+    yesterday = today - timedelta(days=1)
+
+    videos = [
+        TrendingVideo(
+            video_id="v1",
+            category_id="10",
+            title="뮤직비디오 공식 테스트",
+            channel_title="Ch1",
+            view_count=100000,
+            like_count=2000,
+            comment_count=100,
+            published_at="2026-03-18T10:00:00Z",
+            collected_at=today,
+        ),
+        TrendingVideo(
+            video_id="v2",
+            category_id="10",
+            title="뮤직비디오 인기 영상",
+            channel_title="Ch2",
+            view_count=200000,
+            like_count=4000,
+            comment_count=200,
+            published_at="2026-03-18T10:00:00Z",
+            collected_at=today,
+        ),
+        TrendingVideo(
+            video_id="v3",
+            category_id="20",
+            title="뮤직비디오 공식 어제",
+            channel_title="Ch3",
+            view_count=50000,
+            like_count=1000,
+            comment_count=50,
+            published_at="2026-03-17T10:00:00Z",
+            collected_at=yesterday,
+        ),
+    ]
+    for v in videos:
+        db_session.add(v)
+    db_session.commit()
+
+
+@pytest.fixture()
+def seeded_client():
+    Base.metadata.create_all(_test_engine)
+    db = _TestSession()
+    _seed_videos(db)
+    db.close()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_youtube_service] = _mock_youtube_service
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(_test_engine)
+
+
+def test_get_trends_keywords(seeded_client):
+    response = seeded_client.get("/trends/keywords?days=7")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["days"] == 7
+    assert isinstance(data["keywords"], list)
+    assert len(data["keywords"]) > 0
+
+    # "뮤직비디오"는 3개 영상 모두에 포함 → 가장 빈도 높음
+    keyword_names = [k["keyword"] for k in data["keywords"]]
+    assert "뮤직비디오" in keyword_names
+
+
+def test_get_trends_keywords_excludes_short_words(seeded_client):
+    response = seeded_client.get("/trends/keywords?days=7")
+
+    data = response.json()
+    keyword_names = [k["keyword"] for k in data["keywords"]]
+    # 1글자 단어는 제외
+    for kw in keyword_names:
+        assert len(kw) > 1
+
+
+def test_get_trends_keywords_empty():
+    Base.metadata.create_all(_test_engine)
+    app.dependency_overrides[get_db] = _override_get_db
+    client = TestClient(app)
+
+    response = client.get("/trends/keywords?days=7")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["days"] == 7
+    assert data["keywords"] == []
+
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(_test_engine)
