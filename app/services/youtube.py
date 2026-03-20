@@ -1,8 +1,20 @@
+import re
+
 from googleapiclient.discovery import build
 from fastapi import HTTPException
 
 from app.config import Settings, REGION_CODE
 from app.schemas import Category, Video, VideoStats
+
+
+def parse_duration(duration: str) -> int:
+    match = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", duration)
+    if not match:
+        return 0
+    hours = int(match.group(1) or 0)
+    minutes = int(match.group(2) or 0)
+    seconds = int(match.group(3) or 0)
+    return hours * 3600 + minutes * 60 + seconds
 
 
 class YouTubeService:
