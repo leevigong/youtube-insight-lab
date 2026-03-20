@@ -18,9 +18,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-DATABASE_URL = "sqlite:///./data/trending.db"
+from app.config import get_settings
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# Settings에 database_url 추가: default="sqlite:///./data/trending.db"
+settings = get_settings()
+engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 
 class Base(DeclarativeBase):
@@ -32,6 +34,11 @@ def get_db():
         yield db
     finally:
         db.close()
+```
+
+`config.py`에 추가:
+```python
+database_url: str = "sqlite:///./data/trending.db"
 ```
 
 ### `app/models.py` — ORM 모델
@@ -73,11 +80,15 @@ class TrendingVideo(Base):
 }
 ```
 
+**중복 처리:** 같은 수집 실행 내에서 video_id 중복은 무시. 다른 날 같은 영상이 다시 수집되는 것은 허용 (트렌드 추적 목적).
+
 ### 자동 수집 (하루 1회)
 
 - APScheduler 사용
 - `app/scheduler.py` — 스케줄러 설정 + 수집 작업 등록
+- 매일 00:00 UTC에 실행 (Settings에서 설정 가능)
 - FastAPI lifespan 이벤트로 시작/종료 관리
+- 수집 실패 시 로깅 후 다음 실행까지 대기 (재시도 없음)
 - 의존성 추가: `apscheduler`
 
 ## 엔드포인트
@@ -88,8 +99,9 @@ class TrendingVideo(Base):
 
 **로직:**
 1. `collected_at` 기준 최근 N일 데이터 조회
-2. 일별로 제목 키워드 빈도 집계
+2. 일별로 제목 키워드 빈도 집계 (공백 분리, 1글자 단어 제거 — Phase 3 방식과 동일)
 3. 상위 10개 키워드의 일별 변화 반환
+4. 데이터 없는 기간은 빈 배열 반환
 
 **응답:**
 ```json

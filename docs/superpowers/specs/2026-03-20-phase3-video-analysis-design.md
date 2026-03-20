@@ -11,7 +11,8 @@
 개별 영상의 상세 정보 조회.
 
 **YouTube API 호출:**
-- `videos.list(part="snippet,statistics,contentDetails", id=video_id, regionCode="KR")`
+- `videos.list(part="snippet,statistics,contentDetails", id=video_id)`
+- 참고: 단일 영상 조회 시 `regionCode`는 불필요 (id로 직접 조회)
 
 **응답:**
 ```json
@@ -90,7 +91,8 @@ class CategoryAnalysis(BaseModel):
 - `get_video_details(video_id: str) -> VideoDetail` 추가
   - `contentDetails.duration` (ISO 8601, "PT15M33S") → 초 단위로 변환
   - `snippet.tags` → 리스트 (없으면 빈 리스트)
-  - `snippet.thumbnails.maxres.url` → 없으면 `high.url` fallback
+  - `snippet.thumbnails` fallback 순서: `maxres` → `high` → `medium` → `default`
+  - `statistics.likeCount`, `commentCount`는 비활성화된 경우 0으로 처리 (`.get()` 사용)
 - `get_popular_videos_with_details(category_id: str) -> list[VideoDetail]` 추가
   - `part="snippet,statistics,contentDetails"` 로 한 번에 조회
 
@@ -98,8 +100,8 @@ class CategoryAnalysis(BaseModel):
 
 - `analyze_category(videos: list[VideoDetail]) -> CategoryAnalysis`
   - pandas DataFrame 생성
-  - 제목 키워드 빈도: 제목을 공백 분리 → Counter → 상위 10개
-  - 평균 업로드 시간대: `published_at` 파싱 → hour 추출 → 평균
+  - 제목 키워드 빈도: 제목을 공백 분리 → 1글자 단어 제거 → Counter → 상위 10개
+  - 평균 업로드 시간대: `published_at` 파싱 (UTC) → hour 추출 → 평균 (UTC 기준)
   - 평균 영상 길이: `duration_seconds` 평균
   - 구간 분포: short(<240) / medium(240-1200) / long(>1200) 카운트
   - 섬네일 URL 목록
