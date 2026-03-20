@@ -23,5 +23,8 @@ env/
 *.json
 !pyproject.toml
 
+# Worktrees
+.worktrees/
+
 # OS
 .DS_Store
