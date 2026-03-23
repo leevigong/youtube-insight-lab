@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 
 from app.config import Settings, get_settings
 from app.schemas import CategoriesResponse, PopularVideosResponse, CategoryAnalysis
@@ -32,7 +32,8 @@ def list_categories(
     description="특정 카테고리의 인기 동영상 목록을 반환합니다.",
 )
 def list_popular_videos(
-    category_id: str, service: YouTubeService = Depends(get_youtube_service)
+    category_id: str = Path(description="카테고리 ID. 카테고리 목록 조회 API에서 확인할 수 있습니다."),
+    service: YouTubeService = Depends(get_youtube_service),
 ) -> PopularVideosResponse:
     videos = service.get_popular_videos(category_id)
     return PopularVideosResponse(category_id=category_id, videos=videos)
@@ -45,7 +46,8 @@ def list_popular_videos(
     description="특정 카테고리의 인기 동영상을 분석하여 키워드 빈도, 평균 업로드 시간, 영상 길이 분포 등을 반환합니다.",
 )
 def get_category_analysis(
-    category_id: str, service: YouTubeService = Depends(get_youtube_service)
+    category_id: str = Path(description="카테고리 ID. 카테고리 목록 조회 API에서 확인할 수 있습니다."),
+    service: YouTubeService = Depends(get_youtube_service),
 ) -> CategoryAnalysis:
     videos = service.get_popular_videos_with_details(category_id)
     return analyze_category(category_id, videos)
