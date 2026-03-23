@@ -60,3 +60,37 @@ class CategoryAnalysis(BaseModel):
     avg_duration_seconds: float
     duration_distribution: DurationDistribution
     thumbnail_urls: list[str]
+
+
+class CollectResponse(BaseModel):
+    collected_categories: int
+    collected_videos: int
+    collected_at: str
+
+
+class DailyKeywordCount(BaseModel):
+    date: str
+    count: int
+
+
+class TrendKeyword(BaseModel):
+    keyword: str
+    daily: list[DailyKeywordCount]
+
+
+class KeywordTrend(BaseModel):
+    days: int
+    keywords: list[TrendKeyword]
+
+
+class DailyStats(BaseModel):
+    date: str
+    avg_view_count: float
+    avg_like_count: float
+    video_count: int
+
+
+class TimelineTrend(BaseModel):
+    category_id: str
+    days: int
+    daily_stats: list[DailyStats]
