@@ -42,10 +42,17 @@ def collect(
 )
 def get_keyword_trends(
     days: int = Query(default=7, ge=1, le=90, description="조회 기간 (일)"),
+    video_type: str | None = Query(
+        default=None,
+        description="동영상 유형 필터 (regular: 일반, shorts: 쇼츠, 미지정 시 전체)",
+    ),
     db: Session = Depends(get_db),
 ) -> KeywordTrend:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    videos = db.query(TrendingVideo).filter(TrendingVideo.collected_at >= cutoff).all()
+    query = db.query(TrendingVideo).filter(TrendingVideo.collected_at >= cutoff)
+    if video_type:
+        query = query.filter(TrendingVideo.video_type == video_type)
+    videos = query.all()
 
     # 일별 키워드 빈도 집계
     # {keyword: {date_str: count}}
@@ -84,17 +91,20 @@ def get_keyword_trends(
 def get_timeline_trends(
     category_id: str = Query(description="카테고리 ID"),
     days: int = Query(default=7, ge=1, le=90, description="조회 기간 (일)"),
+    video_type: str | None = Query(
+        default=None,
+        description="동영상 유형 필터 (regular: 일반, shorts: 쇼츠, 미지정 시 전체)",
+    ),
     db: Session = Depends(get_db),
 ) -> TimelineTrend:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    videos = (
-        db.query(TrendingVideo)
-        .filter(
-            TrendingVideo.category_id == category_id,
-            TrendingVideo.collected_at >= cutoff,
-        )
-        .all()
+    query = db.query(TrendingVideo).filter(
+        TrendingVideo.category_id == category_id,
+        TrendingVideo.collected_at >= cutoff,
     )
+    if video_type:
+        query = query.filter(TrendingVideo.video_type == video_type)
+    videos = query.all()
 
     # 일별 집계
     daily_data: dict[str, list[TrendingVideo]] = defaultdict(list)

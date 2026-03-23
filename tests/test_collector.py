@@ -83,12 +83,14 @@ MOCK_VIDEOS_RESPONSE = {
                 "title": "Popular Music Video",
                 "channelTitle": "Channel A",
                 "publishedAt": "2026-03-18T10:00:00Z",
+                "thumbnails": {"high": {"url": "https://example.com/vid1.jpg"}},
             },
             "statistics": {
                 "viewCount": "150000",
                 "likeCount": "3000",
                 "commentCount": "200",
             },
+            "contentDetails": {"duration": "PT5M30S"},
         },
         {
             "id": "vid2",
@@ -96,12 +98,14 @@ MOCK_VIDEOS_RESPONSE = {
                 "title": "Another Video",
                 "channelTitle": "Channel B",
                 "publishedAt": "2026-03-17T08:30:00Z",
+                "thumbnails": {"high": {"url": "https://example.com/vid2.jpg"}},
             },
             "statistics": {
                 "viewCount": "80000",
                 "likeCount": "1500",
                 "commentCount": "100",
             },
+            "contentDetails": {"duration": "PT10M"},
         },
     ]
 }
@@ -128,6 +132,8 @@ def test_collect_trending_videos():
 
     videos = db.query(TrendingVideo).all()
     assert len(videos) == 2
+    assert all(v.video_type == "regular" for v in videos)
+    assert all(v.duration_seconds is not None for v in videos)
 
 
 def test_collect_dedup_within_same_run():

@@ -4,7 +4,16 @@ from googleapiclient.discovery import build
 from fastapi import HTTPException
 
 from app.config import Settings, REGION_CODE
-from app.schemas import Category, Video, VideoStats, VideoDetail
+from app.schemas import Category, Video, VideoDetail, VideoStats
+
+
+def detect_video_type(duration_seconds: int, title: str, tags: list[str]) -> str:
+    if duration_seconds <= 60:
+        return "shorts"
+    text = f"{title} {' '.join(tags)}".lower()
+    if "#shorts" in text:
+        return "shorts"
+    return "regular"
 
 
 def parse_duration(duration: str) -> int:
@@ -98,6 +107,8 @@ class YouTubeService:
         snippet = item["snippet"]
         stats = item["statistics"]
         content = item["contentDetails"]
+        duration = parse_duration(content["duration"])
+        tags = snippet.get("tags", [])
         return VideoDetail(
             id=item["id"], title=snippet["title"],
             channel_title=snippet["channelTitle"],
@@ -107,8 +118,9 @@ class YouTubeService:
                 like_count=int(stats.get("likeCount", 0)),
                 comment_count=int(stats.get("commentCount", 0)),
             ),
-            duration_seconds=parse_duration(content["duration"]),
-            tags=snippet.get("tags", []),
+            duration_seconds=duration,
+            video_type=detect_video_type(duration, snippet["title"], tags),
+            tags=tags,
             thumbnail_url=self._get_thumbnail_url(snippet.get("thumbnails", {})),
         )
 
@@ -130,6 +142,8 @@ class YouTubeService:
             snippet = item["snippet"]
             stats = item["statistics"]
             content = item["contentDetails"]
+            duration = parse_duration(content["duration"])
+            tags = snippet.get("tags", [])
             results.append(VideoDetail(
                 id=item["id"], title=snippet["title"],
                 channel_title=snippet["channelTitle"],
@@ -139,8 +153,9 @@ class YouTubeService:
                     like_count=int(stats.get("likeCount", 0)),
                     comment_count=int(stats.get("commentCount", 0)),
                 ),
-                duration_seconds=parse_duration(content["duration"]),
-                tags=snippet.get("tags", []),
+                duration_seconds=duration,
+                video_type=detect_video_type(duration, snippet["title"], tags),
+                tags=tags,
                 thumbnail_url=self._get_thumbnail_url(snippet.get("thumbnails", {})),
             ))
         return results

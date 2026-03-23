@@ -17,6 +17,7 @@ def _make_video(
     duration_seconds,
     tags=None,
     thumbnail_url="https://example.com/thumb.jpg",
+    video_type="regular",
 ):
     return VideoDetail(
         id=id,
@@ -25,6 +26,7 @@ def _make_video(
         published_at=published_at,
         stats=VideoStats(view_count=1000, like_count=50, comment_count=10),
         duration_seconds=duration_seconds,
+        video_type=video_type,
         tags=tags or [],
         thumbnail_url=thumbnail_url,
     )

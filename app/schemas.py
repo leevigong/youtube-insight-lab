@@ -37,6 +37,7 @@ class VideoDetail(BaseModel):
     published_at: str = Field(description="게시일시 (ISO 8601)")
     stats: VideoStats = Field(description="조회수/좋아요/댓글 통계")
     duration_seconds: int = Field(description="영상 길이 (초)")
+    video_type: str = Field(description="동영상 유형 (regular: 일반, shorts: 쇼츠)")
     tags: list[str] = Field(description="태그 목록")
     thumbnail_url: str = Field(description="썸네일 이미지 URL")
 
