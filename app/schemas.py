@@ -94,3 +94,63 @@ class TimelineTrend(BaseModel):
     category_id: str = Field(description="카테고리 ID")
     days: int = Field(description="조회 기간 (일)")
     daily_stats: list[DailyStats] = Field(description="일별 통계")
+
+
+# --- 키워드 관련 스키마 ---
+
+
+class KeywordCreate(BaseModel):
+    keyword: str = Field(description="등록할 검색 키워드", min_length=1, max_length=100)
+
+
+class KeywordResponse(BaseModel):
+    id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    created_at: str = Field(description="등록 일시 (ISO 8601)")
+
+
+class KeywordListResponse(BaseModel):
+    keywords: list[KeywordResponse] = Field(description="등록된 키워드 목록")
+
+
+class KeywordVideoItem(BaseModel):
+    video_id: str = Field(description="YouTube 동영상 ID")
+    title: str = Field(description="동영상 제목")
+    channel_title: str = Field(description="채널명")
+    published_at: str = Field(description="게시일시 (ISO 8601)")
+    view_count: int = Field(description="조회수")
+    like_count: int = Field(description="좋아요 수")
+    comment_count: int = Field(description="댓글 수")
+    video_type: str = Field(description="동영상 유형 (regular/shorts)")
+    duration_seconds: int | None = Field(description="영상 길이 (초)")
+    collected_at: str = Field(description="수집 일시 (ISO 8601)")
+
+
+class KeywordVideosResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    videos: list[KeywordVideoItem] = Field(description="수집된 영상 목록")
+
+
+class SurgeVideo(BaseModel):
+    video_id: str = Field(description="YouTube 동영상 ID")
+    title: str = Field(description="동영상 제목")
+    channel_title: str = Field(description="채널명")
+    current_view_count: int = Field(description="현재 조회수")
+    previous_view_count: int = Field(description="이전 조회수")
+    view_increase: int = Field(description="조회수 증가량")
+    growth_rate: float = Field(description="조회수 증가율 (배수)")
+    avg_growth_rate: float = Field(description="키워드 평균 증가율 (배수)")
+    surge_reason: str = Field(description="급등 판정 사유")
+
+
+class SurgeResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    surge_videos: list[SurgeVideo] = Field(description="조회수 급등 영상 목록")
+
+
+class KeywordCollectResponse(BaseModel):
+    collected_keywords: int = Field(description="수집된 키워드 수")
+    collected_videos: int = Field(description="수집된 동영상 수")
+    collected_at: str = Field(description="수집 일시 (ISO 8601)")

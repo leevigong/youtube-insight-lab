@@ -293,9 +293,10 @@ def test_scheduler_creates_job():
     scheduler = create_scheduler()
     jobs = scheduler.get_jobs()
 
-    assert len(jobs) == 1
-    assert jobs[0].id == "collect_trending"
-    assert jobs[0].name == "collect_trending_videos"
+    assert len(jobs) == 2
+    job_ids = {j.id for j in jobs}
+    assert "collect_trending" in job_ids
+    assert "collect_keyword_videos" in job_ids
 
 
 def test_scheduler_not_running_by_default():

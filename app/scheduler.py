@@ -5,6 +5,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.database import SessionLocal
 from app.services.collector import collect_trending_videos
+from app.services.keyword_collector import collect_keyword_videos
 from app.services.youtube import YouTubeService
 from app.config import get_settings
 
@@ -30,6 +31,25 @@ def _run_collection():
         logger.exception("Scheduled collection failed")
 
 
+def _run_keyword_collection():
+    """스케줄러에서 호출되는 키워드 영상 수집 작업"""
+    try:
+        settings = get_settings()
+        youtube_service = YouTubeService(settings=settings)
+        db = SessionLocal()
+        try:
+            result = collect_keyword_videos(db=db, youtube_service=youtube_service)
+            logger.info(
+                "Scheduled keyword collection complete: %d videos for %d keywords",
+                result.collected_videos,
+                result.collected_keywords,
+            )
+        finally:
+            db.close()
+    except Exception:
+        logger.exception("Scheduled keyword collection failed")
+
+
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -37,6 +57,13 @@ def create_scheduler() -> BackgroundScheduler:
         trigger=CronTrigger(hour=0, minute=0, timezone="UTC"),
         id="collect_trending",
         name="collect_trending_videos",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _run_keyword_collection,
+        trigger=CronTrigger(hour=0, minute=30, timezone="UTC"),
+        id="collect_keyword_videos",
+        name="collect_keyword_videos",
         replace_existing=True,
     )
     return scheduler

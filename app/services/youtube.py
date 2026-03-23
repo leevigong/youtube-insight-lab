@@ -7,6 +7,15 @@ from app.config import Settings, REGION_CODE
 from app.schemas import Category, Video, VideoStats, VideoDetail
 
 
+def detect_video_type(duration_seconds: int, title: str, tags: list[str]) -> str:
+    if duration_seconds <= 60:
+        return "shorts"
+    text = f"{title} {' '.join(tags)}".lower()
+    if "#shorts" in text:
+        return "shorts"
+    return "regular"
+
+
 def parse_duration(duration: str) -> int:
     match = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", duration)
     if not match:
@@ -141,6 +150,64 @@ class YouTubeService:
                 ),
                 duration_seconds=parse_duration(content["duration"]),
                 tags=snippet.get("tags", []),
+                thumbnail_url=self._get_thumbnail_url(snippet.get("thumbnails", {})),
+            ))
+        return results
+
+    def search_videos(self, keyword: str, max_results: int = 20) -> list[VideoDetail]:
+        try:
+            search_response = (
+                self.client.search()
+                .list(
+                    part="id",
+                    q=keyword,
+                    type="video",
+                    order="viewCount",
+                    regionCode=REGION_CODE,
+                    maxResults=max_results,
+                )
+                .execute()
+            )
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"YouTube API error: {e}")
+
+        video_ids = [
+            item["id"]["videoId"]
+            for item in search_response.get("items", [])
+        ]
+        if not video_ids:
+            return []
+
+        try:
+            details_response = (
+                self.client.videos()
+                .list(
+                    part="snippet,statistics,contentDetails",
+                    id=",".join(video_ids),
+                )
+                .execute()
+            )
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"YouTube API error: {e}")
+
+        results = []
+        for item in details_response.get("items", []):
+            snippet = item["snippet"]
+            stats = item["statistics"]
+            content = item["contentDetails"]
+            duration = parse_duration(content["duration"])
+            tags = snippet.get("tags", [])
+            results.append(VideoDetail(
+                id=item["id"], title=snippet["title"],
+                channel_title=snippet["channelTitle"],
+                published_at=snippet["publishedAt"],
+                stats=VideoStats(
+                    view_count=int(stats.get("viewCount", 0)),
+                    like_count=int(stats.get("likeCount", 0)),
+                    comment_count=int(stats.get("commentCount", 0)),
+                ),
+                duration_seconds=duration,
+                tags=tags,
                 thumbnail_url=self._get_thumbnail_url(snippet.get("thumbnails", {})),
             ))
         return results
