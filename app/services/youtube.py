@@ -154,18 +154,23 @@ class YouTubeService:
             ))
         return results
 
-    def search_videos(self, keyword: str, max_results: int = 20) -> list[VideoDetail]:
+    def search_videos(
+        self, keyword: str, max_results: int = 20, published_after: str | None = None,
+    ) -> list[VideoDetail]:
+        search_params = {
+            "part": "id",
+            "q": keyword,
+            "type": "video",
+            "order": "viewCount",
+            "regionCode": REGION_CODE,
+            "maxResults": max_results,
+        }
+        if published_after:
+            search_params["publishedAfter"] = published_after
         try:
             search_response = (
                 self.client.search()
-                .list(
-                    part="id",
-                    q=keyword,
-                    type="video",
-                    order="viewCount",
-                    regionCode=REGION_CODE,
-                    maxResults=max_results,
-                )
+                .list(**search_params)
                 .execute()
             )
         except Exception as e:

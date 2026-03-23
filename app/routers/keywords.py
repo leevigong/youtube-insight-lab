@@ -7,6 +7,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import Keyword, KeywordVideo
 from app.schemas import (
+    HotResponse,
     KeywordCollectResponse,
     KeywordCreate,
     KeywordListResponse,
@@ -15,6 +16,7 @@ from app.schemas import (
     KeywordVideosResponse,
     SurgeResponse,
 )
+from app.services.hot_analyzer import analyze_hot_videos
 from app.services.keyword_collector import collect_keyword_videos
 from app.services.surge_detector import detect_surge
 from app.services.youtube import YouTubeService
@@ -165,6 +167,32 @@ def get_surge_videos(
         raise HTTPException(status_code=404, detail="키워드를 찾을 수 없습니다.")
 
     return detect_surge(db, keyword_id, days)
+
+
+@router.get(
+    "/{keyword_id}/hot",
+    response_model=HotResponse,
+    summary="지금 터지는 영상 분석",
+    description="최근 업로드된 영상 중 시간당 조회수가 높은 영상을 찾고, "
+    "상위 영상의 컨텐츠 패턴(제목 키워드, 영상 길이, 업로드 시간대, 쇼츠 비율)을 분석합니다.",
+    responses={404: {"description": "키워드를 찾을 수 없음"}},
+)
+def get_hot_videos(
+    keyword_id: int = Path(description="키워드 ID"),
+    days: int = Query(default=3, ge=1, le=30, description="최근 N일 이내 업로드된 영상만 검색"),
+    db: Session = Depends(get_db),
+    youtube_service: YouTubeService = Depends(get_youtube_service),
+) -> HotResponse:
+    keyword = db.query(Keyword).filter(Keyword.id == keyword_id).first()
+    if not keyword:
+        raise HTTPException(status_code=404, detail="키워드를 찾을 수 없습니다.")
+
+    return analyze_hot_videos(
+        keyword_id=keyword.id,
+        keyword=keyword.keyword,
+        youtube_service=youtube_service,
+        days=days,
+    )
 
 
 @router.post(

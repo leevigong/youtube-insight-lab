@@ -311,6 +311,45 @@ def test_surge_endpoint_not_found(client):
     assert response.status_code == 404
 
 
+# --- Hot 분석 테스트 ---
+
+
+def test_hot_endpoint(client):
+    create_resp = client.post("/keywords", json={"keyword": "삼성전자"})
+    keyword_id = create_resp.json()["id"]
+
+    response = client.get(f"/keywords/{keyword_id}/hot?days=3")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["keyword"] == "삼성전자"
+    assert len(data["hot_videos"]) == 2
+    # 시간당 조회수 내림차순 정렬 확인
+    assert data["hot_videos"][0]["views_per_hour"] >= data["hot_videos"][1]["views_per_hour"]
+    # 패턴 분석 포함 확인
+    assert "pattern" in data
+    assert "top_title_keywords" in data["pattern"]
+    assert "avg_duration_seconds" in data["pattern"]
+    assert "shorts_ratio" in data["pattern"]
+
+
+def test_hot_endpoint_not_found(client):
+    response = client.get("/keywords/999/hot")
+    assert response.status_code == 404
+
+
+def test_hot_pattern_analysis(client):
+    create_resp = client.post("/keywords", json={"keyword": "삼성전자"})
+    keyword_id = create_resp.json()["id"]
+
+    response = client.get(f"/keywords/{keyword_id}/hot?days=3")
+    pattern = response.json()["pattern"]
+
+    # vid2가 45초 shorts → shorts_ratio > 0
+    assert pattern["shorts_ratio"] > 0
+    assert pattern["avg_duration_seconds"] > 0
+    assert len(pattern["top_title_keywords"]) > 0
+
+
 # --- 스케줄러 테스트 ---
 
 
