@@ -22,7 +22,7 @@ def collect_trending_videos(
     collected_categories = 0
     for category in assignable:
         try:
-            videos = youtube_service.get_popular_videos(category.id)
+            videos = youtube_service.get_popular_videos_with_details(category.id)
         except Exception:
             logger.warning(
                 "Failed to fetch videos for category %s (%s), skipping",
@@ -45,6 +45,8 @@ def collect_trending_videos(
                 like_count=video.stats.like_count,
                 comment_count=video.stats.comment_count,
                 published_at=video.published_at,
+                video_type=video.video_type,
+                duration_seconds=video.duration_seconds,
             )
             db.add(record)
             total_videos += 1

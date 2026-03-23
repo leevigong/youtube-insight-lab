@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, func
+from sqlalchemy import Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -18,4 +18,6 @@ class TrendingVideo(Base):
     like_count: Mapped[int]
     comment_count: Mapped[int]
     published_at: Mapped[str] = mapped_column(String(30))
+    video_type: Mapped[str] = mapped_column(String(10), default="regular", index=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     collected_at: Mapped[datetime] = mapped_column(default=func.now(), index=True)

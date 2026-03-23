@@ -37,12 +37,14 @@ MOCK_VIDEOS_RESPONSE = {
                 "title": "인기 뮤직비디오 공식",
                 "channelTitle": "Channel A",
                 "publishedAt": "2026-03-18T10:00:00Z",
+                "thumbnails": {"high": {"url": "https://example.com/vid1.jpg"}},
             },
             "statistics": {
                 "viewCount": "150000",
                 "likeCount": "3000",
                 "commentCount": "200",
             },
+            "contentDetails": {"duration": "PT5M"},
         },
     ]
 }
@@ -164,6 +166,8 @@ def _seed_videos(db_session):
             like_count=2000,
             comment_count=100,
             published_at="2026-03-18T10:00:00Z",
+            video_type="regular",
+            duration_seconds=300,
             collected_at=today,
         ),
         TrendingVideo(
@@ -175,6 +179,8 @@ def _seed_videos(db_session):
             like_count=4000,
             comment_count=200,
             published_at="2026-03-18T10:00:00Z",
+            video_type="shorts",
+            duration_seconds=45,
             collected_at=today,
         ),
         TrendingVideo(
@@ -186,6 +192,8 @@ def _seed_videos(db_session):
             like_count=1000,
             comment_count=50,
             published_at="2026-03-17T10:00:00Z",
+            video_type="regular",
+            duration_seconds=600,
             collected_at=yesterday,
         ),
     ]
@@ -248,6 +256,27 @@ def test_get_trends_keywords_empty():
     Base.metadata.drop_all(_test_engine)
 
 
+def test_get_trends_keywords_filter_by_video_type(seeded_client):
+    response = seeded_client.get("/trends/keywords?days=7&video_type=regular")
+
+    assert response.status_code == 200
+    data = response.json()
+    # v1(regular) + v3(regular)만 포함, v2(shorts)는 제외
+    keyword_names = [k["keyword"] for k in data["keywords"]]
+    assert "뮤직비디오" in keyword_names
+
+
+def test_get_trends_keywords_filter_shorts(seeded_client):
+    response = seeded_client.get("/trends/keywords?days=7&video_type=shorts")
+
+    assert response.status_code == 200
+    data = response.json()
+    # v2(shorts)만 포함
+    keyword_names = [k["keyword"] for k in data["keywords"]]
+    assert "뮤직비디오" in keyword_names
+    assert "인기" in keyword_names
+
+
 def test_get_trends_timeline(seeded_client):
     response = seeded_client.get("/trends/timeline?category_id=10&days=7")
 
@@ -258,11 +287,22 @@ def test_get_trends_timeline(seeded_client):
     assert isinstance(data["daily_stats"], list)
     assert len(data["daily_stats"]) > 0
 
-    # 카테고리 10: 오늘 v1(100000), v2(200000) → avg=150000
+    # 카테고리 10: 오늘 v1(100000 regular), v2(200000 shorts) → avg=150000
     today_stats = data["daily_stats"][-1]
     assert today_stats["avg_view_count"] == 150000.0
     assert today_stats["avg_like_count"] == 3000.0
     assert today_stats["video_count"] == 2
+
+
+def test_get_trends_timeline_filter_by_video_type(seeded_client):
+    response = seeded_client.get("/trends/timeline?category_id=10&days=7&video_type=regular")
+
+    assert response.status_code == 200
+    data = response.json()
+    # 카테고리 10의 regular은 v1만
+    today_stats = data["daily_stats"][-1]
+    assert today_stats["video_count"] == 1
+    assert today_stats["avg_view_count"] == 100000.0
 
 
 def test_get_trends_timeline_empty_category(seeded_client):

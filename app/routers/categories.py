@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 
 from app.config import Settings, get_settings
 from app.schemas import CategoriesResponse, PopularVideosResponse, CategoryAnalysis
@@ -47,7 +47,13 @@ def list_popular_videos(
 )
 def get_category_analysis(
     category_id: str = Path(description="카테고리 ID. 카테고리 목록 조회 API에서 확인할 수 있습니다."),
+    video_type: str | None = Query(
+        default=None,
+        description="동영상 유형 필터 (regular: 일반, shorts: 쇼츠, 미지정 시 전체)",
+    ),
     service: YouTubeService = Depends(get_youtube_service),
 ) -> CategoryAnalysis:
     videos = service.get_popular_videos_with_details(category_id)
+    if video_type:
+        videos = [v for v in videos if v.video_type == video_type]
     return analyze_category(category_id, videos)

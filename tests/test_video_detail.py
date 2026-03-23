@@ -120,11 +120,13 @@ def test_video_detail_schema():
         published_at="2026-03-19T12:00:00Z",
         stats=VideoStats(view_count=150000, like_count=3000, comment_count=200),
         duration_seconds=933,
+        video_type="regular",
         tags=["키워드1", "키워드2"],
         thumbnail_url="https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
     )
     assert detail.id == "abc123"
     assert detail.duration_seconds == 933
+    assert detail.video_type == "regular"
     assert detail.tags == ["키워드1", "키워드2"]
 
 
@@ -136,10 +138,12 @@ def test_video_detail_empty_tags():
         published_at="2026-03-19T12:00:00Z",
         stats=VideoStats(view_count=100, like_count=0, comment_count=0),
         duration_seconds=60,
+        video_type="shorts",
         tags=[],
         thumbnail_url="https://example.com/thumb.jpg",
     )
     assert detail.tags == []
+    assert detail.video_type == "shorts"
 
 
 def test_keyword_frequency_schema():
@@ -168,6 +172,14 @@ def test_category_analysis_schema():
     assert analysis.category_id == "10"
     assert analysis.video_count == 20
     assert len(analysis.keywords) == 1
+
+
+def test_get_video_detail_includes_video_type(client):
+    response = client.get("/videos/abc123/detail")
+    assert response.status_code == 200
+    data = response.json()
+    assert "video_type" in data
+    assert data["video_type"] == "regular"
 
 
 def test_get_video_details():
