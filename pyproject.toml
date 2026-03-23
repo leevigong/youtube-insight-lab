@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv",
     "sqlalchemy",
     "apscheduler",
+    "anthropic>=0.86.0",
 ]
 
 [project.optional-dependencies]

@@ -94,3 +94,99 @@ class TimelineTrend(BaseModel):
     category_id: str = Field(description="카테고리 ID")
     days: int = Field(description="조회 기간 (일)")
     daily_stats: list[DailyStats] = Field(description="일별 통계")
+
+
+# --- 키워드 관련 스키마 ---
+
+
+class KeywordCreate(BaseModel):
+    keyword: str = Field(description="등록할 검색 키워드", min_length=1, max_length=100)
+
+
+class KeywordResponse(BaseModel):
+    id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    created_at: str = Field(description="등록 일시 (ISO 8601)")
+
+
+class KeywordListResponse(BaseModel):
+    keywords: list[KeywordResponse] = Field(description="등록된 키워드 목록")
+
+
+class KeywordVideoItem(BaseModel):
+    video_id: str = Field(description="YouTube 동영상 ID")
+    title: str = Field(description="동영상 제목")
+    channel_title: str = Field(description="채널명")
+    published_at: str = Field(description="게시일시 (ISO 8601)")
+    view_count: int = Field(description="조회수")
+    like_count: int = Field(description="좋아요 수")
+    comment_count: int = Field(description="댓글 수")
+    video_type: str = Field(description="동영상 유형 (regular/shorts)")
+    duration_seconds: int | None = Field(description="영상 길이 (초)")
+    collected_at: str = Field(description="수집 일시 (ISO 8601)")
+
+
+class KeywordVideosResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    videos: list[KeywordVideoItem] = Field(description="수집된 영상 목록")
+
+
+class SurgeVideo(BaseModel):
+    video_id: str = Field(description="YouTube 동영상 ID")
+    title: str = Field(description="동영상 제목")
+    channel_title: str = Field(description="채널명")
+    current_view_count: int = Field(description="현재 조회수")
+    previous_view_count: int = Field(description="이전 조회수")
+    view_increase: int = Field(description="조회수 증가량")
+    growth_rate: float = Field(description="조회수 증가율 (배수)")
+    avg_growth_rate: float = Field(description="키워드 평균 증가율 (배수)")
+    surge_reason: str = Field(description="급등 판정 사유")
+
+
+class SurgeResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    surge_videos: list[SurgeVideo] = Field(description="조회수 급등 영상 목록")
+
+
+class KeywordCollectResponse(BaseModel):
+    collected_keywords: int = Field(description="수집된 키워드 수")
+    collected_videos: int = Field(description="수집된 동영상 수")
+    collected_at: str = Field(description="수집 일시 (ISO 8601)")
+
+
+class HotVideo(BaseModel):
+    video_id: str = Field(description="YouTube 동영상 ID")
+    title: str = Field(description="동영상 제목")
+    channel_title: str = Field(description="채널명")
+    published_at: str = Field(description="게시일시 (ISO 8601)")
+    hours_since_upload: float = Field(description="업로드 후 경과 시간")
+    view_count: int = Field(description="조회수")
+    like_count: int = Field(description="좋아요 수")
+    comment_count: int = Field(description="댓글 수")
+    views_per_hour: float = Field(description="시간당 조회수")
+    duration_seconds: int = Field(description="영상 길이 (초)")
+    video_type: str = Field(description="동영상 유형 (regular/shorts)")
+    tags: list[str] = Field(description="태그 목록")
+
+
+class ContentPattern(BaseModel):
+    top_title_keywords: list[KeywordFrequency] = Field(description="상위 영상 제목 키워드 빈도")
+    avg_duration_seconds: float = Field(description="상위 영상 평균 길이 (초)")
+    avg_upload_hour: float = Field(description="상위 영상 평균 업로드 시간 (0~23)")
+    shorts_ratio: float = Field(description="쇼츠 비율 (0~1)")
+    common_tags: list[KeywordFrequency] = Field(description="자주 사용된 태그")
+
+
+class HotResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    hot_videos: list[HotVideo] = Field(description="지금 터지는 영상 (시간당 조회수 순)")
+    pattern: ContentPattern = Field(description="상위 영상 컨텐츠 패턴 분석")
+
+
+class ContentStrategyResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    strategy: str = Field(description="AI가 생성한 컨텐츠 전략 브리핑 (마크다운)")
