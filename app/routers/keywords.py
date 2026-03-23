@@ -7,6 +7,7 @@ from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import Keyword, KeywordVideo
 from app.schemas import (
+    ContentStrategyResponse,
     HotResponse,
     KeywordCollectResponse,
     KeywordCreate,
@@ -16,6 +17,7 @@ from app.schemas import (
     KeywordVideosResponse,
     SurgeResponse,
 )
+from app.services.content_advisor import generate_content_strategy
 from app.services.hot_analyzer import analyze_hot_videos
 from app.services.keyword_collector import collect_keyword_videos
 from app.services.surge_detector import detect_surge
@@ -192,6 +194,50 @@ def get_hot_videos(
         keyword=keyword.keyword,
         youtube_service=youtube_service,
         days=days,
+    )
+
+
+@router.get(
+    "/{keyword_id}/strategy",
+    response_model=ContentStrategyResponse,
+    summary="AI 컨텐츠 전략 브리핑",
+    description="최근 인기 영상 데이터를 Claude AI로 분석하여, "
+    "어떤 컨텐츠를 만들면 알고리즘의 수혜를 받을 수 있는지 전략 브리핑을 생성합니다.",
+    responses={
+        404: {"description": "키워드를 찾을 수 없음"},
+        503: {"description": "AI 서비스 사용 불가 (API 키 미설정)"},
+    },
+)
+def get_content_strategy(
+    keyword_id: int = Path(description="키워드 ID"),
+    days: int = Query(default=3, ge=1, le=30, description="최근 N일 이내 업로드된 영상만 검색"),
+    db: Session = Depends(get_db),
+    youtube_service: YouTubeService = Depends(get_youtube_service),
+    settings: Settings = Depends(get_settings),
+) -> ContentStrategyResponse:
+    keyword = db.query(Keyword).filter(Keyword.id == keyword_id).first()
+    if not keyword:
+        raise HTTPException(status_code=404, detail="키워드를 찾을 수 없습니다.")
+
+    if not settings.anthropic_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="ANTHROPIC_API_KEY가 설정되지 않았습니다.",
+        )
+
+    hot_data = analyze_hot_videos(
+        keyword_id=keyword.id,
+        keyword=keyword.keyword,
+        youtube_service=youtube_service,
+        days=days,
+    )
+
+    strategy = generate_content_strategy(hot_data, settings.anthropic_api_key)
+
+    return ContentStrategyResponse(
+        keyword_id=keyword.id,
+        keyword=keyword.keyword,
+        strategy=strategy,
     )
 
 

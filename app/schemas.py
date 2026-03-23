@@ -184,3 +184,9 @@ class HotResponse(BaseModel):
     keyword: str = Field(description="검색 키워드")
     hot_videos: list[HotVideo] = Field(description="지금 터지는 영상 (시간당 조회수 순)")
     pattern: ContentPattern = Field(description="상위 영상 컨텐츠 패턴 분석")
+
+
+class ContentStrategyResponse(BaseModel):
+    keyword_id: int = Field(description="키워드 ID")
+    keyword: str = Field(description="검색 키워드")
+    strategy: str = Field(description="AI가 생성한 컨텐츠 전략 브리핑 (마크다운)")
