@@ -18,7 +18,12 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
-app = FastAPI(title="yt-insight-lab", lifespan=lifespan)
+app = FastAPI(
+    title="yt-insight-lab",
+    description="YouTube 인기 동영상 수집 및 분석 API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 app.include_router(categories_router)
 app.include_router(videos_router)

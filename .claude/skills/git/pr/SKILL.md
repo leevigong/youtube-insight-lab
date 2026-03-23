@@ -1,16 +1,16 @@
 ---
-name: issue-to-pr
-description: Use when the user references a GitHub issue number (e.g. "#4", "이슈 4번", "issue #4") and wants implementation work done, or when asked to work from GitHub issues
+name: git/pr
+description: Use when the user wants to start implementation work from a GitHub issue and create a PR (e.g. "#4 작업해줘", "이슈 4번 PR 만들어", "이 이슈 구현해줘")
 ---
 
-# Issue to PR
+# Git PR
 
-GitHub Issue를 기반으로 브랜치 생성 → 구현 → PR 생성까지 자동화하는 워크플로우.
+GitHub Issue를 기반으로 브랜치 생성 → 구현 → PR 생성까지의 워크플로우.
 
 ## Process
 
 ```dot
-digraph issue_to_pr {
+digraph git_pr {
     rankdir=TB;
     "Read issue with gh" [shape=box];
     "Complex enough for plan?" [shape=diamond];
@@ -46,10 +46,8 @@ Issue의 제목, 본문, 라벨을 확인하여 범위를 파악한다.
 ### Step 3: 브랜치 생성
 
 ```bash
-git checkout -b feature/<issue-number>-<short-description> main
+git checkout -b <prefix>/#<issue-number>-<short-description> main
 ```
-
-명명 규칙: `feature/#<번호>-<설명>` 또는 `fix/#<번호>-<설명>`
 
 ### Step 4: 구현
 

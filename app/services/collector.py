@@ -19,8 +19,18 @@ def collect_trending_videos(
     seen_video_ids: set[str] = set()
     total_videos = 0
 
+    collected_categories = 0
     for category in assignable:
-        videos = youtube_service.get_popular_videos(category.id)
+        try:
+            videos = youtube_service.get_popular_videos(category.id)
+        except Exception:
+            logger.warning(
+                "Failed to fetch videos for category %s (%s), skipping",
+                category.id,
+                category.title,
+            )
+            continue
+        collected_categories += 1
         for video in videos:
             if video.id in seen_video_ids:
                 continue
@@ -49,7 +59,7 @@ def collect_trending_videos(
     )
 
     return CollectResponse(
-        collected_categories=len(assignable),
+        collected_categories=collected_categories,
         collected_videos=total_videos,
         collected_at=collected_at,
     )

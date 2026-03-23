@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -18,10 +18,15 @@ from app.schemas import (
 from app.services.collector import collect_trending_videos
 from app.services.youtube import YouTubeService
 
-router = APIRouter()
+router = APIRouter(tags=["트렌드"])
 
 
-@router.post("/collect", response_model=CollectResponse)
+@router.post(
+    "/collect",
+    response_model=CollectResponse,
+    summary="인기 동영상 수집",
+    description="YouTube에서 카테고리별 인기 동영상을 수집하여 DB에 저장합니다.",
+)
 def collect(
     db: Session = Depends(get_db),
     youtube_service: YouTubeService = Depends(get_youtube_service),
@@ -29,9 +34,14 @@ def collect(
     return collect_trending_videos(db=db, youtube_service=youtube_service)
 
 
-@router.get("/trends/keywords", response_model=KeywordTrend)
+@router.get(
+    "/trends/keywords",
+    response_model=KeywordTrend,
+    summary="키워드 트렌드 조회",
+    description="지정 기간 내 인기 동영상 제목에서 추출한 상위 키워드의 일별 추이를 반환합니다.",
+)
 def get_keyword_trends(
-    days: int = 7,
+    days: int = Query(default=7, ge=1, le=90, description="조회 기간 (일)"),
     db: Session = Depends(get_db),
 ) -> KeywordTrend:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
@@ -65,10 +75,15 @@ def get_keyword_trends(
     return KeywordTrend(days=days, keywords=keywords)
 
 
-@router.get("/trends/timeline", response_model=TimelineTrend)
+@router.get(
+    "/trends/timeline",
+    response_model=TimelineTrend,
+    summary="타임라인 트렌드 조회",
+    description="특정 카테고리의 일별 평균 조회수, 좋아요 수, 동영상 수 추이를 반환합니다.",
+)
 def get_timeline_trends(
-    category_id: str,
-    days: int = 7,
+    category_id: str = Query(description="카테고리 ID"),
+    days: int = Query(default=7, ge=1, le=90, description="조회 기간 (일)"),
     db: Session = Depends(get_db),
 ) -> TimelineTrend:
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
